@@ -6,14 +6,11 @@ import org.Arc.Client.Student;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
-
+import org.openqa.selenium.NoSuchElementException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
+
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class RadiusDriver extends ArcDriver{
     public RadiusDriver() {
@@ -115,7 +112,7 @@ public class RadiusDriver extends ArcDriver{
                 studentResults.add(currStudent);
                 counter += 1;
             }
-        } catch (Throwable e) {
+        } catch (NoSuchElementException e) {
             return studentResults;
         }
         // Row Selector     #gridStudent > table > tbody > tr:nth-child(2)
@@ -129,13 +126,6 @@ public class RadiusDriver extends ArcDriver{
 
     public void openLearningPlan(Student s) {
         openStudentProfile(s);
-        
-    }
-
-    public static void main(String[] args) {
-        RadiusDriver rDriver = new RadiusDriver();
-        List<Student> students = rDriver.searchStudent("Jessica");
-        rDriver.openStudentProfile(students.get(0));
         
     }
 }
