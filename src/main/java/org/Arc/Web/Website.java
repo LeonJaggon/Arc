@@ -1,8 +1,5 @@
 package org.Arc.Web;
 
-import java.util.Map;
-import java.util.HashMap;
-
 public enum Website {
     CONEXED, RADIUS, ACUITY, NONE;
 
