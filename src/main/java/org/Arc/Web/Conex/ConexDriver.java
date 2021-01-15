@@ -1,25 +1,30 @@
 package org.Arc.Web.Conex;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JFileChooser;
-
-import java.awt.Robot;
-import java.awt.event.KeyEvent;
-import java.awt.AWTException;
+import javax.swing.UIManager;
 
 import org.Arc.Client.Student;
 import org.Arc.Web.ArcDriver;
 import org.Arc.Web.Website;
+import org.Arc.Web.Acuity.AcuityDriver;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
-public class ConexDriver extends ArcDriver{
+public class ConexDriver extends ArcDriver {
+    List<BreakoutRoom> breakoutRooms;
+
     public ConexDriver() {
         super(Website.CONEXED);
         signIn();
+        updateBreakoutRooms();
     }
 
-    public void signIn() {
+    public void signIn() { 
         switchTo().frame("login-iframe");
         WebElement signInBtn = findElementById("craniumcafe-button");
         signInBtn.click();
@@ -40,25 +45,32 @@ public class ConexDriver extends ArcDriver{
     }
     
     public void openMenuChoice(MenuChoice choice) {
-        try {
-            Robot robot = new Robot();
-            robot.keyPress(KeyEvent.VK_ESCAPE);
-        } catch (AWTException e) {
-            e.printStackTrace();
-        }
+        Actions action = new Actions(this);
+        action.sendKeys(Keys.ESCAPE);
+        action.perform();
+        
         WebElement menuButton = findElementByCssSelector(choice.getCSSSelector());
-        System.out.println(menuButton.getText());
         menuButton.click();
         manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
     }
     
-    public void addBreakoutRoom(Student student, String hour, String minute, String time) {
+    public void addBreakoutRoomsFromAcuity() {
+        AcuityDriver acuityDriver = new AcuityDriver();
+        List<ConexStudent> onlineStudents = acuityDriver.getScheduledStudents();
+        acuityDriver.quit();
+
+        for (ConexStudent student : onlineStudents)
+            addBreakoutRoom(student, student.getTime());
+    }
+    
+    public void addBreakoutRoom(Student student, String time) {
+        
         openMenuChoice(MenuChoice.BREAKOUT_ROOMS);
         WebElement addRoomBtn = findElementByCssSelector(
                 "#breakout-rooms-dialog > div.modal-footer > div:nth-child(1) > button");
         addRoomBtn.click();
 
-        String roomTitle = "(" + hour + ":" + minute + " " + time + ") " + student.getFirstName() + " "
+        String roomTitle = "(" + time + ") " + student.getFirstName() + " "
                 + student.getLastName();
         switchTo().alert().sendKeys(roomTitle);
         switchTo().alert().accept();
@@ -69,7 +81,6 @@ public class ConexDriver extends ArcDriver{
         WebElement roomsButton = findElementByCssSelector(
                 "#breakout-rooms-dialog > div.modal-footer > div:nth-child(2) > button");
         String roomStatus = roomsButton.getText();
-        System.out.println("\n" + roomStatus + "\n");
         if (roomStatus.equals("Open All Rooms") && isOpen) {
             roomsButton.click();
         }
@@ -92,7 +103,13 @@ public class ConexDriver extends ArcDriver{
     
     public void uploadDocument() {
         openMenuChoice(MenuChoice.DOCUMENT_LIBRARY);
-    
+
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         String filePath = "";
         final JFileChooser fileChooser = new JFileChooser();
         int choiceVal = fileChooser.showOpenDialog(null);
@@ -104,19 +121,59 @@ public class ConexDriver extends ArcDriver{
                 return;
         }
 
-        WebElement docBtn = findElementByCssSelector(
-                "#document-library-dialog > div.modal-content > div > div.document-library-content > div:nth-child(1) > div:nth-child(2) > button");
-        docBtn.click();
-
         WebElement docUpload = findElementById("user-library-upload");
         docUpload.sendKeys(filePath);
-        docUpload.submit();
     }
+    
+    public void updateBreakoutRooms() {
+        WebElement userTab = findElementByCssSelector("#menu-user-tabs > button:nth-child(2)");
+        userTab.click();
+
+        List<WebElement> titles = findElementsByClassName("breakout-room-title");
+        List<WebElement> buttons = findElementsByClassName("classroom-user-button");
+
+        breakoutRooms = new ArrayList<>();
+
+        for (int i = 0; i < titles.size(); i++) {
+            String currTitle = titles.get(i).getText();
+            WebElement currBtn = buttons.get(i);
+            breakoutRooms.add(new BreakoutRoom(currTitle, currBtn));
+        }
+    }
+    
+    public void printCurrentRooms() {
+        for (BreakoutRoom room : breakoutRooms) {
+            System.out.println(room.getTitle());
+            room.getEnterButton().click();
+        }
+            
+    }
+    
     public static void main(String[] args) {
         ConexDriver test = new ConexDriver();
-        test.uploadDocument();
+        test.addBreakoutRoomsFromAcuity();
+        System.out.println("------DONE------");
+        test.changeRoomsStatus(true);
     }
 
+    private class BreakoutRoom {
+        private String title;
+        private WebElement enterBtn;
+
+        public BreakoutRoom(String title, WebElement enterBtn) {
+            this.title = title;
+            this.enterBtn = enterBtn;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public WebElement getEnterButton() {
+            return enterBtn;
+        }
+    }
+    
     private enum MenuChoice {
         DOCUMENT_LIBRARY, BREAKOUT_ROOMS, INVITE, OPEN;
 
