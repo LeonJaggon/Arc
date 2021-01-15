@@ -5,6 +5,7 @@ import org.Arc.Client.Center;
 import org.Arc.Client.Student;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.NoSuchElementException;
 import java.util.ArrayList;
@@ -115,8 +116,6 @@ public class RadiusDriver extends ArcDriver{
         } catch (NoSuchElementException e) {
             return studentResults;
         }
-        // Row Selector     #gridStudent > table > tbody > tr:nth-child(2)
-        // Cell Selector    #gridStudent > table > tbody > tr.k-state-selected > td:nth-child(1)
     }
 
     public void openStudentProfile(Student s) {
@@ -124,8 +123,56 @@ public class RadiusDriver extends ArcDriver{
         get("https://radius.mathnasium.com/Student/Details/" + s.getID());
     }
 
+    public void markAttendance(Student student, String time) {
+        get("https://radius.mathnasium.com/Attendance/Roster");
+
+        String[] splitTime = time.split(":");
+        int hour = Integer.parseInt(splitTime[0]);
+        int next_hour = hour + 1;
+        String next_time = next_hour + ":" + splitTime[1];
+        
+        System.out.println(next_time);
+        manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+
+        List<WebElement> fNames = findElementsByClassName("StudentFirstNameTD");
+        List<WebElement> lNames = findElementsByClassName("StudentLastNameTD");
+        List<WebElement> timeInInputs = findElementsByClassName("timePickerArrival");
+        List<WebElement> timeOutInputs = findElementsByClassName("timePickerDeparture");
+
+        String firstName = student.getFirstName();
+        String lastName = student.getLastName();
+
+        for (int i = 0; i < fNames.size(); i++) {
+            String fName = fNames.get(i).getText();
+            String lName = lNames.get(i).getText();
+
+            if (fName.equals(firstName) && lName.equals(lastName)) {
+                int adjustI = 2 * i + 1;
+                WebElement inInput = timeInInputs.get(adjustI);
+                WebElement outInput = timeOutInputs.get(adjustI);
+
+                inInput.sendKeys("");
+                inInput.sendKeys(time);
+                inInput.sendKeys(Keys.TAB);
+                inInput.sendKeys(Keys.TAB);
+
+                manage().timeouts().implicitlyWait(2, TimeUnit.SECONDS);
+
+                outInput.sendKeys("");
+                outInput.sendKeys(next_time);
+                outInput.sendKeys(Keys.TAB);
+                break;
+            }
+        }
+    }
+    
     public void openLearningPlan(Student s) {
         openStudentProfile(s);
-        
+
+    }
+    
+    public static void main(String[] args) {
+        RadiusDriver test = new RadiusDriver();
+        test.markAttendance(new Student(null,"Piper", "Mancuso"), "4:00 PM");
     }
 }
