@@ -10,7 +10,7 @@ public enum Website {
             case RADIUS:
                 return "https://radius.mathnasium.com/Account/Login";
             case ACUITY:
-                return "https://secure.acuityscheduling.com/appointments.php";
+                return "https://acuityscheduling.com/login.php";
             default:
                 return "https://www.google.com";
         }
@@ -36,7 +36,7 @@ public enum Website {
             case RADIUS:
                 return "Kaylyn2!";
             case ACUITY:
-                return "Kaylyn2!";
+                return "Math1234$$";
             default:
                 return null;
         }
